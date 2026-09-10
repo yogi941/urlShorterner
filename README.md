@@ -354,7 +354,7 @@ MIT License - see LICENSE file
 
 ## 📞 Contact
 
-- 📧 Email: [your-email@example.com]
+- 📧 Email: [priyadharshinivenkatachelam@gmail.com]
 - 🐦 Twitter: [@yogi941]
 - 💬 Discussions: [GitHub Discussions]
 - 🐛 Issues: [Report Issues]
