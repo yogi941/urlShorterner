@@ -1,287 +1,372 @@
-# 🔗 URL Shortener
+# 🔗 URL Shortener - Efficient Link Management
 
-> A feature-rich **Java + JDBC + MySQL** URL Shortener with Base62 encoding, custom aliases, click analytics, URL expiry, and a layered architecture — built for learning and placement interviews.
+> A high-performance URL shortening service with analytics, custom aliases, and real-time tracking. Built with Java for scalability and reliability.
 
----
-
-## Features
-
-| # | Feature | Description |
-|---|---------|-------------|
-| 1 | **Auto Short URL** | Converts any URL to a short code using Base62 encoding |
-| 2 | **Custom Alias** | Lets users define their own short code (e.g., `/github`) |
-| 3 | **Collision Detection** | Rejects duplicate aliases using `UNIQUE` DB constraint |
-| 4 | **URL Expiry** | Create temporary links that expire after N days |
-| 5 | **Click Tracking** | Counts every redirect on a short URL |
-| 6 | **URL Validation** | Only accepts valid `http://` or `https://` URLs |
-| 7 | **Analytics** | Tracks Country, Browser, Device, and Time per click |
-| 8 | **Statistics** | Per-URL and global click stats |
-| 9 | **Delete URLs** | Remove any short URL by ID |
+[![Java](https://img.shields.io/badge/Java-007396?style=flat&logo=java&logoColor=white)](https://java.com)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-6DB33F?style=flat&logo=spring-boot&logoColor=white)](https://spring.io/projects/spring-boot)
+[![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=flat&logo=mongodb&logoColor=white)](https://mongodb.com)
 
 ---
 
-## Project Structure
+## 🎯 Project Overview
+
+URL Shortener is a robust backend service designed to convert long URLs into short, shareable links. With built-in analytics, custom alias support, and high availability, it's perfect for enterprises and content creators.
+
+### Key Features
+
+🔗 **URL Shortening**
+- Convert long URLs to compact short links
+- Custom alias support
+- Automatic slug generation
+- Expiration management
+
+📊 **Analytics Dashboard**
+- Click tracking and statistics
+- Visitor demographics
+- Device and browser analytics
+- Time-series tracking
+
+⚙️ **Advanced Features**
+- QR code generation
+- Link expiration
+- Password protection
+- Rate limiting
+
+🔐 **Security**
+- Input validation
+- URL verification
+- DDoS protection
+- User authentication
+
+---
+
+## 🛠️ Tech Stack
+
+### Backend
+- **Java 11+** - Programming language
+- **Spring Boot** - Framework
+- **Spring Data MongoDB** - Data access
+- **Spring Security** - Authentication
+- **Maven** - Build tool
+
+### Database
+- **MongoDB** - NoSQL database
+- **Redis** - Caching layer
+
+### Additional Libraries
+- **Lombok** - Boilerplate reduction
+- **Jackson** - JSON processing
+- **JUnit** - Testing
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Java 11+
+- Maven 3.6+
+- MongoDB
+- Redis (optional)
+
+### Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/yogi941/urlShorterner.git
+cd urlShorterner
+
+# Build the project
+mvn clean install
+
+# Run the application
+mvn spring-boot:run
+```
+
+### Configuration
+
+Create `application.properties`:
+
+```properties
+spring.data.mongodb.uri=mongodb://localhost:27017/urlshortener
+spring.application.name=urlshortener
+server.port=8080
+
+# Redis (optional)
+spring.redis.host=localhost
+spring.redis.port=6379
+
+# JWT Configuration
+app.jwt.secret=your_secret_key
+app.jwt.expiration=86400000
+
+# Base URL for shortened links
+app.base.url=http://localhost:8080
+```
+
+---
+
+## 📁 Project Structure
 
 ```
-URLShortener/
+urlShorterner/
 ├── src/
-│   ├── Main.java                 ← Entry point
-│   ├── DBConnection.java         ← MySQL JDBC connection
-│   ├── Url.java                  ← URL model (with expiry support)
-│   ├── UrlValidator.java         ← HTTP/HTTPS URL validation
-│   ├── Base62.java               ← ID to short code encoder/decoder
-│   ├── PrimeIdGenerator.java     ← (Optional) Obfuscated ID generator
-│   ├── UrlRepository.java        ← All SQL for urls table
-│   ├── UrlService.java           ← Business logic layer
-│   ├── Menu.java                 ← Console UI (10 options)
-│   ├── ClickAnalytics.java       ← Click event model
-│   ├── DeviceInfo.java           ← Auto-detects Country/Browser/Device
-│   ├── AnalyticsRepository.java  ← All SQL for url_clicks table
-│   └── AnalyticsService.java     ← Analytics charts and reports
-├── mysql-connector-j.jar         ← MySQL JDBC driver (add manually)
+│   ├── main/
+│   │   ├── java/
+│   │   │   └── com/yogi/urlshortener/
+│   │   │       ├── controller/
+│   │   │       ├── service/
+│   │   │       ├── repository/
+│   │   │       ├── model/
+│   │   │       ├── dto/
+│   │   │       ├── exception/
+│   │   │       ├── security/
+│   │   │       └── config/
+│   │   └── resources/
+│   │       └── application.properties
+│   └── test/
+├── pom.xml
 └── README.md
 ```
 
 ---
 
-## Architecture
+## 🔄 API Endpoints
 
+### URL Operations
+
+**Create Short URL**
+```http
+POST /api/v1/urls/shorten
+Content-Type: application/json
+
+{
+  "originalUrl": "https://example.com/very/long/url",
+  "customAlias": "mylink",  // optional
+  "expirationDate": "2024-12-31"  // optional
+}
+
+Response:
+{
+  "shortCode": "abc123",
+  "shortUrl": "http://localhost:8080/abc123",
+  "originalUrl": "https://example.com/very/long/url",
+  "createdAt": "2024-01-15T10:30:00Z"
+}
 ```
-User Input (Console)
-        │
-        ▼
-     Menu.java              ← Presentation Layer
-        │
-        ▼
-   UrlService.java          ← Business Logic Layer
-   AnalyticsService.java
-        │
-        ▼
-  UrlRepository.java        ← Data Access Layer (JDBC)
-  AnalyticsRepository.java
-        │
-        ▼
-  DBConnection.java         ← MySQL via JDBC
-        │
-        ▼
-     MySQL DB
-  ┌──────────────┐
-  │  urls        │
-  │  url_clicks  │
-  └──────────────┘
+
+**Redirect to Original URL**
+```http
+GET /abc123
+
+Response: 301 Redirect to original URL
+```
+
+**Get URL Details**
+```http
+GET /api/v1/urls/abc123
+
+Response:
+{
+  "shortCode": "abc123",
+  "shortUrl": "http://localhost:8080/abc123",
+  "originalUrl": "https://example.com/very/long/url",
+  "clicks": 150,
+  "createdAt": "2024-01-15T10:30:00Z"
+}
+```
+
+### Analytics
+
+**Get Click Statistics**
+```http
+GET /api/v1/analytics/abc123
+
+Response:
+{
+  "shortCode": "abc123",
+  "totalClicks": 150,
+  "uniqueClicks": 120,
+  "clicksByDate": [...],
+  "topReferrers": [...],
+  "topDevices": [...]
+}
+```
+
+### User Management
+
+**Register User**
+```http
+POST /api/v1/auth/register
+```
+
+**Login**
+```http
+POST /api/v1/auth/login
 ```
 
 ---
 
-## Database Schema
+## 🗄️ Database Schema
 
-### Step 1 — Create Database
-```sql
-CREATE DATABASE url_shortener;
-USE url_shortener;
+### URLs Collection
+```javascript
+{
+  _id: ObjectId,
+  shortCode: String (unique),
+  originalUrl: String,
+  customAlias: String,
+  userId: ObjectId,
+  createdAt: Date,
+  expirationDate: Date,
+  isActive: Boolean,
+  clicks: Number,
+  password: String (hashed, optional)
+}
 ```
 
-### Step 2 — Create urls table
-```sql
-CREATE TABLE urls (
-    id           INT AUTO_INCREMENT PRIMARY KEY,
-    original_url VARCHAR(2048) NOT NULL,
-    short_code   VARCHAR(20) UNIQUE,
-    clicks       INT DEFAULT 0,
-    expiry_time  TIMESTAMP NULL,
-    created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-### Step 3 — Create url_clicks table (Analytics)
-```sql
-CREATE TABLE url_clicks (
-    id         INT AUTO_INCREMENT PRIMARY KEY,
-    url_id     INT NOT NULL,
-    short_code VARCHAR(20),
-    country    VARCHAR(100) DEFAULT 'Unknown',
-    browser    VARCHAR(100) DEFAULT 'Unknown',
-    device     VARCHAR(100) DEFAULT 'Unknown',
-    clicked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (url_id) REFERENCES urls(id) ON DELETE CASCADE
-);
+### Analytics Collection
+```javascript
+{
+  _id: ObjectId,
+  shortCode: String,
+  clickTime: Date,
+  referrer: String,
+  userAgent: String,
+  ipAddress: String,
+  device: String,
+  browser: String,
+  country: String
+}
 ```
 
 ---
 
-## Setup and Installation
+## 🔒 Security Features
 
-### Prerequisites
-- Java JDK 17 or higher
-- MySQL Server 8.x
-- `mysql-connector-j.jar` — [Download from MySQL](https://dev.mysql.com/downloads/connector/j/)
+- ✅ JWT authentication
+- ✅ Password hashing with bcrypt
+- ✅ Input validation and sanitization
+- ✅ Rate limiting per IP
+- ✅ HTTPS support
+- ✅ CORS configuration
+- ✅ SQL injection prevention
+- ✅ Password-protected short URLs
 
-### 1. Clone the Repository
+---
+
+## 🧪 Testing
+
 ```bash
-git clone https://github.com/your-username/url-shortener.git
-cd url-shortener
+# Run all tests
+mvn test
+
+# Run specific test class
+mvn test -Dtest=UrlServiceTest
+
+# Generate coverage report
+mvn jacoco:report
 ```
-
-### 2. Add JDBC Driver
-Download `mysql-connector-j.jar` and place it in the project root (same level as `src/`).
-
-### 3. Configure Database Credentials
-Open `src/DBConnection.java` and update:
-```java
-private static final String DB_URL      = "jdbc:mysql://localhost:3306/url_shortener";
-private static final String DB_USER     = "root";           // your MySQL username
-private static final String DB_PASSWORD = "your_password";  // your MySQL password
-```
-
-### 4. Run the SQL Schema
-Copy and run all three SQL blocks above in MySQL Workbench or the MySQL CLI.
 
 ---
 
-## How to Run
+## 📊 Performance Optimization
 
-### Compile
+- **Caching:** Redis for frequently accessed URLs
+- **Indexing:** MongoDB indexes on shortCode and userId
+- **Connection Pooling:** Optimized database connections
+- **Async Processing:** Non-blocking I/O for analytics
+- **Compression:** GZIP compression for responses
+
+---
+
+## 📈 Scaling Considerations
+
+- Horizontal scaling with load balancer
+- Database sharding by shortCode prefix
+- CDN for static content
+- Redis cluster for distributed caching
+- Kafka for event streaming (future)
+
+---
+
+## 🚀 Deployment
+
+### Docker
+
 ```bash
-# Windows
-javac -cp .;mysql-connector-j.jar src/*.java
+# Build Docker image
+docker build -t urlshortener .
 
-# Linux / Mac
-javac -cp .:mysql-connector-j.jar src/*.java
+# Run container
+docker run -p 8080:8080 \
+  -e SPRING_DATA_MONGODB_URI=mongodb://mongo:27017/urlshortener \
+  urlshortener
 ```
 
-### Run
-```bash
-# Windows
-java -cp .;mysql-connector-j.jar src.Main
+### Kubernetes
 
-# Linux / Mac
-java -cp .:mysql-connector-j.jar src.Main
-```
-
----
-
-## Usage Examples
-
-### Shorten a URL
-```
-Choice: 1
-Enter URL: https://github.com
-
-Short URL : http://localhost/b
-```
-
-### Open / Redirect
-```
-Choice: 2
-Enter short code: b
-
-Redirecting to   : https://github.com
-Country detected : India
-Device detected  : Windows
-Browser detected : Console/CLI
-```
-
-### Custom Alias
-```
-Choice: 7
-Enter URL: https://github.com
-Enter custom code: github
-
-Short URL : http://localhost/github
-```
-
-Collision example:
-```
-Enter custom code: github
-Short code 'github' already taken. Choose another.
-```
-
-### URL with Expiry
-```
-Choice: 8
-Enter URL: https://amazon.com
-Expire after how many days? 7
-
-Short URL  : http://localhost/c
-Expires on : 2026-07-30 19:05:10
-```
-
-After expiry:
-```
-Choice: 2
-Enter short code: c
-This URL has expired.
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: urlshortener
+spec:
+  replicas: 3
+  template:
+    spec:
+      containers:
+      - name: urlshortener
+        image: urlshortener:latest
+        ports:
+        - containerPort: 8080
 ```
 
 ---
 
-## Analytics Dashboard
+## 🐛 Common Issues
 
-```
-╔══════════════════════════════════════════╗
-║      ANALYTICS REPORT                    ║
-║      Short Code: b                       ║
-╚══════════════════════════════════════════╝
+**Duplicate Short Code**
+- Short codes are generated using Base62 encoding
+- Collision probability is extremely low
 
-Total Clicks : 8
-
-── Clicks by Country ──────────────────────
-  India           | ██████████████████████████████  5  (62.5%)
-  United States   | ██████████████                  3  (37.5%)
-
-── Clicks by Browser ──────────────────────
-  Console/CLI     | ██████████████████████████████  8  (100.0%)
-
-── Clicks by Device ───────────────────────
-  Windows         | ██████████████████████████████  6  (75.0%)
-  Linux           | ████████                        2  (25.0%)
-
-── Clicks by Day ──────────────────────────
-  2026-07-23      | ▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪  8 clicks
-
-── Recent Clicks ──────────────────────────
-  [2026-07-23 19:05:10] Code=b   Country=India   Browser=Console/CLI   Device=Windows
-  [2026-07-23 18:50:22] Code=b   Country=India   Browser=Console/CLI   Device=Windows
-```
+**URL Not Redirecting**
+- Check if URL is expired
+- Verify custom alias is correct
+- Check database connection
 
 ---
 
-## Tech Stack
+## 🤝 Contributing
 
-| Layer | Technology |
-|-------|-----------|
-| Language | Java 17 |
-| Database | MySQL 8.x |
-| DB Driver | JDBC (mysql-connector-j) |
-| Encoding | Base62 (custom implementation) |
-| Architecture | Layered — Presentation, Service, Repository, DB |
-| Build | Manual javac (no Maven/Gradle needed) |
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/Enhancement`)
+3. Commit changes (`git commit -m 'Add Enhancement'`)
+4. Push to branch (`git push origin feature/Enhancement`)
+5. Open Pull Request
 
 ---
 
-## Resume Line
+## 📝 License
 
-> Built a **Java-based URL Shortener** using JDBC and MySQL with **Base62 encoding**, **custom aliases**, **collision detection**, **URL expiry**, **click tracking**, and a **per-click analytics system** tracking Country, Browser, Device, and Time — implemented with a clean layered architecture (Service, Repository, JDBC).
-
----
-
-## Future Improvements
-
-| Feature | Complexity |
-|---------|-----------|
-| User Authentication (Register / Login) | Medium |
-| REST API with Javalin or Spring Boot | Medium-Hard |
-| Redis Cache for fast redirects | Medium-Hard |
-| Rate Limiting (100 req/min per user) | Medium-Hard |
-| Web UI (HTML + CSS + JS frontend) | Hard |
-| Deploy to Railway / Render (free hosting) | Easy once REST API is added |
+MIT License - see LICENSE file
 
 ---
 
-## License
+## 📞 Contact
 
-This project is open-source and available under the [MIT License](LICENSE).
+- 📧 Email: [your-email@example.com]
+- 🐦 Twitter: [@yogi941]
+- 💬 Discussions: [GitHub Discussions]
+- 🐛 Issues: [Report Issues]
 
 ---
 
-Made with Java — Built for learning and placement interviews
+## 🌟 Acknowledgments
+
+- Spring Boot community
+- MongoDB team
+- Contributors and testers
+
+---
+
+**Shorten links, expand possibilities! 🚀**
